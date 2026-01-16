@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VBA Master Academy - Aprende Macros</title>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* Estilos Personalizados y Animaciones */
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #217346; border-radius: 4px; }
+
+        /* Syntax Highlighting Fake */
+        .code-keyword { color: #569cd6; } /* Azul VSCode */
+        .code-string { color: #ce9178; }  /* Naranja VSCode */
+        .code-comment { color: #6a9955; } /* Verde VSCode */
+        
+        /* Animaciones Drag & Drop */
+        .draggable-item { transition: all 0.2s ease; cursor: grab; }
+        .draggable-item:active { cursor: grabbing; transform: scale(1.02); }
+        .draggable-item.dragging { opacity: 0.5; }
+
+        .canvas-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        /* Simulación MsgBox Windows Clásico */
+        .msgbox-modal {
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            background-color: #f0f0f0;
+            border: 1px solid #999;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: black;
+            min-width: 300px;
+        }
+        .msgbox-header {
+            background: white;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+        .msgbox-content {
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .msgbox-button {
+            border: 1px solid #adadad;
+            background: #e1e1e1;
+            padding: 4px 20px;
+            min-width: 70px;
+            transition: all 0.1s;
+        }
+        .msgbox-button:hover {
+            background: #e5f1fb;
+            border-color: #0078d7;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        /*******************************************************
+         * 1. DATOS (Simulación de JSON)
+         *******************************************************/
+        const courseData = [
+            {
+                id: 1,
+                title: "Habilitar Programador",
+                type: "visual-step", // Nuevo Tipo
+                steps: [
+                    { text: "Haz clic en la pestaña 'Archivo' (File).", highlight: "file" },
+                    { text: "Selecciona 'Opciones' (Options) al final del menú.", highlight: "options" },
+                    { text: "En la ventana, elige 'Personalizar cinta de opciones'.", highlight: "ribbon" },
+                    { text: "En la derecha, marca la casilla 'Programador' o 'Desarrollador'.", highlight: "check" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Conceptos Básicos",
+                type: "concept",
+                content: "VBA (Visual Basic for Applications) es el lenguaje de programación de Excel. Una Macro es una secuencia de instrucciones que automatiza tareas repetitivas.",
+                codeExample: `Sub MiPrimeraMacro()\n    ' Esto es un comentario\n    Range("A1").Value = "Hola"\nEnd Sub`
+            },
+            {
+                id: 3,
+                title: "Estructura MsgBox",
+                type: "concept",
+                content: "El MsgBox muestra una ventana emergente. Tiene 3 partes principales: El mensaje (obligatorio), los botones/íconos (opcional) y el título de la ventana (opcional).",
+                codeExample: `MsgBox ("Mensaje principal"), vbInformation, "Título de Ventana"\n\n' Ejemplo simple:\nMsgBox ("¡Proceso terminado!)"`
+            },
+            {
+                id: 4,
+                title: "Sentencia IF (Condicional)",
+                type: "concept",
+                content: "La estructura IF nos permite tomar decisiones en el código. Si la condición es verdadera, hace una cosa; si no, hace otra (Else).",
+                codeExample: `If Range("A1").Value > 10 Then\n    MsgBox ("Es mayor a 10)"\nElse\n    MsgBox ("Es menor o igual)"\nEnd If`
+            },
+            {
+                id: 5,
+                title: "Tipos de Datos",
+                type: "fill-blanks",
+                instruction: "Define las variables correctas para cada tipo de dato (Entero, Texto, Decimal, Booleano, Fecha).",
+                snippet: [
+                    { text: "Dim edad As ", type: "text" }, { text: "", type: "input", answer: "Integer" }, { text: " ' Entero\n", type: "text" },
+                    { text: "Dim nombre As ", type: "text" }, { text: "", type: "input", answer: "String" }, { text: " ' Texto\n", type: "text" },
+                    { text: "Dim precio As ", type: "text" }, { text: "", type: "input", answer: "Double" }, { text: " ' Número con decimales\n", type: "text" },
+                    { text: "Dim esValido As ", type: "text" }, { text: "", type: "input", answer: "Boolean" }, { text: " ' V o F\n", type: "text" },
+                    { text: "Dim hoy As ", type: "text" }, { text: "", type: "input", answer: "Date" }, { text: " ' Fecha", type: "text" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Range vs Cells",
+                type: "concept",
+                content: "Para referirnos a celdas podemos usar Range (letras y números) o Cells (fila, columna). Cells es muy útil para bucles.",
+                codeExample: `' Usando Range\nRange("A5").Value = 10\n\n' Usando Cells (Fila 5, Columna 1)\nCells(5, 1).Value = 10`
+            },
+            {
+                id: 7,
+                title: "Ejercicio: Estructura Básica",
+                type: "drag-drop",
+                instruction: "Ordena los bloques para crear una macro que escriba el valor 100 en la celda A1.",
+                blocks: [
+                    { id: "b1", text: "Range(\"A1\").Value = 100", correctIndex: 1 },
+                    { id: "b2", text: "End Sub", correctIndex: 2 },
+                    { id: "b3", text: "Sub EscribirValor()", correctIndex: 0 }
+                ]
+            },
+            {
+                id: 8,
+                title: "Finalización",
+                type: "final-msgbox", // Tipo especial para el trigger final
+                content: "¡Felicidades! Has completado el curso básico.",
+                codeExample: `' Fin del Curso`
+            }
+        ];
+
+        const { useState, useEffect, useRef } = React;
+
+        /*******************************************************
+         * 2. COMPONENTES THREE.JS (Fondo Visual)
+         *******************************************************/
+        const ThreeBackground = () => {
+            const mountRef = useRef(null);
+
+            useEffect(() => {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                mountRef.current.appendChild(renderer.domElement);
+
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x1D6F42, 
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.3
+                });
+
+                const cubes = [];
+                for(let i=0; i<20; i++) {
+                    const cube = new THREE.Mesh(geometry, material);
+                    cube.position.set(
+                        (Math.random() - 0.5) * 25,
+                        (Math.random() - 0.5) * 25,
+                        (Math.random() - 0.5) * 15 - 5
+                    );
+                    cube.rotation.set(Math.random(), Math.random(), 0);
+                    scene.add(cube);
+                    cubes.push({ mesh: cube, speed: Math.random() * 0.005 + 0.001 });
+                }
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                const pointLight = new THREE.PointLight(0xffffff, 1);
+                pointLight.position.set(10, 10, 10);
+                scene.add(pointLight);
+
+                camera.position.z = 5;
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    cubes.forEach(item => {
+                        item.mesh.rotation.x += item.speed;
+                        item.mesh.rotation.y += item.speed;
+                    });
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                const handleResize = () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                };
+                window.addEventListener('resize', handleResize);
+
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    mountRef.current.removeChild(renderer.domElement);
+                };
+            }, []);
+
+            return <div ref={mountRef} className="canvas-container" />;
+        };
+
+        /*******************************************************
+         * 3. COMPONENTES DE UI Y EJERCICIOS
+         *******************************************************/
+        
+        // Simulación MsgBox Final
+        const SimulatedMsgBox = ({ onClose }) => (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                <div className="msgbox-modal rounded shadow-2xl transform scale-100 transition-transform">
+                    <div className="msgbox-header">
+                        <span className="text-xs font-semibold text-gray-700">Microsoft Excel</span>
+                        <button onClick={onClose} className="text-gray-500 hover:text-red-500 font-bold px-2">✕</button>
+                    </div>
+                    <div className="msgbox-content">
+                        <div className="text-yellow-500 text-3xl">
+                            <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div className="text-sm text-gray-800">
+                            Curso finalizado con éxito.<br/>
+                            ¿Deseas reiniciar la aplicación?
+                        </div>
+                    </div>
+                    <div className="bg-[#f0f0f0] p-3 flex justify-center border-t border-gray-300">
+                        <button onClick={onClose} className="msgbox-button text-xs shadow-sm active:shadow-inner active:translate-y-px">
+                            Aceptar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // Componente: Visual Step (Habilitar Pestaña)
+        const VisualSteps = ({ steps, onComplete }) => {
+            const [step, setStep] = useState(0);
+
+            const handleNextStep = () => {
+                if(step < steps.length - 1) {
+                    setStep(step + 1);
+                } else {
+                    onComplete();
+                }
+            };
+
+            return (
+                <div className="bg-[#2d2d2d] p-6 rounded-lg border border-gray-600 shadow-lg relative overflow-hidden">
+                    {/* Mock Excel UI */}
+                    <div className="flex border-b border-gray-600 pb-2 mb-4 text-xs text-gray-400 gap-4">
+                        <span className={step === 0 ? "text-green-400 font-bold animate-pulse" : ""}>Archivo</span>
+                        <span>Inicio</span>
+                        <span>Insertar</span>
+                        <span className={step >= 3 ? "text-green-400 font-bold" : ""}>Programador</span>
+                    </div>
+                    
+                    <div className="h-32 flex items-center justify-center bg-[#1e1e1e] rounded border border-gray-700 relative">
+                        {step === 0 && <i className="fas fa-mouse-pointer absolute top-2 left-4 text-white animate-bounce"></i>}
+                        
+                        {step === 1 && (
+                            <div className="bg-gray-700 p-2 rounded text-xs absolute bottom-2 left-2 border border-green-500">
+                                <i className="fas fa-cog mr-2"></i>Opciones
+                            </div>
+                        )}
+                        
+                        {step === 2 && (
+                            <div className="w-3/4 h-20 bg-gray-600 rounded flex">
+                                <div className="w-1/3 border-r border-gray-500 p-2 text-[10px]">
+                                    <div>General</div>
+                                    <div className="text-green-400 font-bold"> Cinta de Opciones</div>
+                                </div>
+                                <div className="w-2/3 p-2 text-[10px]">
+                                    <div className="flex items-center gap-2">
+                                        <input type="checkbox" disabled /> Inicio
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="w-3/4 h-20 bg-gray-600 rounded flex">
+                                <div className="w-1/3 border-r border-gray-500 p-2 text-[10px]">
+                                    <div className="text-green-400 font-bold">Cinta de Opciones</div>
+                                </div>
+                                <div className="w-2/3 p-2 text-[10px]">
+                                    <div className="flex items-center gap-2 text-green-400 font-bold animate-pulse">
+                                        <input type="checkbox" checked readOnly className="accent-green-500" /> Programador
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-4">
+                        <p className="text-lg font-bold mb-2 text-white">Paso {step + 1}:</p>
+                        <p className="text-gray-300 mb-4">{steps[step].text}</p>
+                        <button 
+                            onClick={handleNextStep}
+                            className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition"
+                        >
+                            {step < steps.length - 1 ? "Siguiente Paso" : "Terminar Guía"}
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const CodeBlock = ({ code }) => (
+            <div className="bg-[#1e1e1e] p-4 rounded-lg border border-gray-700 font-mono text-sm overflow-x-auto shadow-lg my-4">
+                <pre className="text-gray-300 whitespace-pre-wrap">{code}</pre>
+            </div>
+        );
+
+        const DragDropExercise = ({ data, onComplete }) => {
+            const [items, setItems] = useState([...data.blocks].sort(() => Math.random() - 0.5));
+            const [status, setStatus] = useState(null);
+
+            const handleDragStart = (e, index) => {
+                e.dataTransfer.setData("dragIndex", index);
+            };
+
+            const handleDrop = (e, dropIndex) => {
+                const dragIndex = e.dataTransfer.getData("dragIndex");
+                const newItems = [...items];
+                const [draggedItem] = newItems.splice(dragIndex, 1);
+                newItems.splice(dropIndex, 0, draggedItem);
+                setItems(newItems);
+                setStatus(null);
+            };
+
+            const checkAnswer = () => {
+                const isCorrect = items.every((item, index) => item.correctIndex === index);
+                if (isCorrect) {
+                    setStatus('success');
+                    onComplete();
+                } else {
+                    setStatus('error');
+                }
+            };
+
+            return (
+                <div className="space-y-4">
+                    <p className="text-gray-300 mb-4">{data.instruction}</p>
+                    <div className="space-y-2">
+                        {items.map((item, index) => (
+                            <div
+                                key={item.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => handleDrop(e, index)}
+                                className={`draggable-item p-3 rounded bg-gray-800 border ${status === 'success' ? 'border-green-500' : status === 'error' ? 'border-red-500' : 'border-gray-600'} hover:bg-gray-700 flex items-center gap-3`}
+                            >
+                                <i className="fas fa-grip-lines text-gray-500"></i>
+                                <code className="text-green-400 font-mono">{item.text}</code>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="pt-4">
+                        <button 
+                            onClick={checkAnswer}
+                            className={`px-6 py-2 rounded font-bold transition-colors ${status === 'success' ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+                        >
+                            {status === 'success' ? '¡Correcto!' : 'Verificar Orden'}
+                        </button>
+                        {status === 'error' && <span className="ml-4 text-red-400">Orden incorrecto.</span>}
+                    </div>
+                </div>
+            );
+        };
+
+        const FillBlanksExercise = ({ data, onComplete }) => {
+            const [inputs, setInputs] = useState({});
+            const [status, setStatus] = useState(null);
+
+            const handleInputChange = (index, value) => {
+                setInputs({ ...inputs, [index]: value });
+                setStatus(null);
+            };
+
+            const checkAnswer = () => {
+                let allCorrect = true;
+                data.snippet.forEach((part, idx) => {
+                    if (part.type === 'input') {
+                        const userVal = inputs[idx] || "";
+                        if (userVal.trim().toLowerCase() !== part.answer.toLowerCase()) {
+                            allCorrect = false;
+                        }
+                    }
+                });
+
+                if (allCorrect) {
+                    setStatus('success');
+                    onComplete();
+                } else {
+                    setStatus('error');
+                }
+            };
+
+            return (
+                <div className="space-y-4">
+                    <p className="text-gray-300">{data.instruction}</p>
+                    <div className="bg-[#1e1e1e] p-6 rounded-lg border border-gray-700 font-mono text-base leading-loose">
+                        {data.snippet.map((part, idx) => (
+                            part.type === 'text' ? 
+                            <span key={idx} className="text-gray-300 whitespace-pre-wrap">{part.text}</span> :
+                            <input 
+                                key={idx}
+                                type="text" 
+                                value={inputs[idx] || ""}
+                                placeholder="..."
+                                onChange={(e) => handleInputChange(idx, e.target.value)}
+                                className={`bg-gray-800 text-white border-b-2 outline-none mx-1 px-1 text-center w-24 
+                                    ${status === 'success' ? 'border-green-500 text-green-400' : 'border-blue-500'}
+                                    focus:border-yellow-400 transition-colors
+                                `}
+                            />
+                        ))}
+                    </div>
+                    <button 
+                        onClick={checkAnswer}
+                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold mt-4"
+                    >
+                        Comprobar Respuestas
+                    </button>
+                    {status === 'success' && <span className="ml-4 text-green-400 font-bold">¡Excelente! Todos los tipos son correctos.</span>}
+                    {status === 'error' && <span className="ml-4 text-red-400">Algunas respuestas son incorrectas.</span>}
+                </div>
+            );
+        };
+
+        /*******************************************************
+         * 4. APP PRINCIPAL
+         *******************************************************/
+        const App = () => {
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [completed, setCompleted] = useState([0]); 
+            const [showMsgBox, setShowMsgBox] = useState(false); // Estado para el MsgBox final
+
+            const currentModule = courseData[currentIndex];
+            const progress = Math.round((completed.length / courseData.length) * 100);
+
+            // Efecto para detectar el módulo final
+            useEffect(() => {
+                if (currentModule.type === 'final-msgbox') {
+                    // Pequeño delay para el efecto dramático
+                    setTimeout(() => setShowMsgBox(true), 500);
+                }
+            }, [currentIndex, currentModule.type]);
+
+            const handleNext = () => {
+                if (currentIndex < courseData.length - 1) {
+                    const nextIdx = currentIndex + 1;
+                    setCurrentIndex(nextIdx);
+                    if (!completed.includes(nextIdx)) {
+                        setCompleted([...completed, nextIdx]);
+                    }
+                }
+            };
+
+            const markModuleComplete = () => {
+                if (!completed.includes(currentIndex)) {
+                    setCompleted([...completed, currentIndex]);
+                }
+            };
+
+            const resetCourse = () => {
+                setShowMsgBox(false);
+                setCurrentIndex(0);
+                setCompleted([0]);
+            };
+
+            return (
+                <div className="flex h-screen text-white relative">
+                    <ThreeBackground />
+
+                    {/* MSGBOX MODAL (Simulado) */}
+                    {showMsgBox && <SimulatedMsgBox onClose={resetCourse} />}
+                    
+                    {/* SIDEBAR */}
+                    <aside className="w-64 glass-panel flex flex-col z-10 hidden md:flex">
+                        <div className="p-6 border-b border-gray-700">
+                            <h1 className="text-2xl font-bold text-green-500"><i className="fas fa-file-excel mr-2"></i>VBA Master</h1>
+                            <p className="text-xs text-gray-400 mt-1">Plataforma Interactiva</p>
+                            <p className="text-xs text-gray-500 mt-1">Dev: Jonathan López</p>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="w-full bg-gray-700 rounded-full h-2.5 mb-2">
+                                <div className="bg-green-600 h-2.5 rounded-full transition-all duration-500" style={{width: `${progress}%`}}></div>
+                            </div>
+                            <span className="text-sm text-gray-400">{progress}% Completado</span>
+                        </div>
+
+                        <nav className="flex-1 overflow-y-auto px-4 py-2">
+                            <ul className="space-y-2 pb-10">
+                                {courseData.map((module, index) => (
+                                    <li 
+                                        key={module.id}
+                                        onClick={() => setCurrentIndex(index)}
+                                        className={`p-3 rounded cursor-pointer transition-colors flex items-center justify-between text-xs
+                                            ${index === currentIndex ? 'bg-green-900/50 border border-green-700' : 'hover:bg-white/5'}
+                                            ${completed.includes(index) ? 'opacity-100' : 'opacity-70'}
+                                        `}
+                                    >
+                                        <span className="truncate w-40">{module.title}</span>
+                                        {completed.includes(index) && <i className="fas fa-check-circle text-green-400"></i>}
+                                    </li>
+                                ))}
+                            </ul>
+                        </nav>
+                    </aside>
+
+                    {/* CONTENIDO PRINCIPAL */}
+                    <main className="flex-1 p-8 flex flex-col items-center justify-center overflow-y-auto relative z-10">
+                        <div className="w-full max-w-4xl glass-panel p-8 rounded-2xl shadow-2xl animate-fade-in mb-10">
+                            
+                            <header className="mb-6 flex justify-between items-center border-b border-gray-700 pb-4">
+                                <div>
+                                    <span className="text-xs font-bold tracking-widest text-green-400 uppercase mb-1 block">Módulo {currentIndex + 1}</span>
+                                    <h2 className="text-3xl font-bold">{currentModule.title}</h2>
+                                </div>
+                                <div className="text-2xl text-gray-500">
+                                    {currentModule.type.includes('concept') ? <i className="fas fa-book-open"></i> : 
+                                     currentModule.type === 'visual-step' ? <i className="fas fa-eye"></i> :
+                                     <i className="fas fa-keyboard"></i>}
+                                </div>
+                            </header>
+
+                            <div className="min-h-[200px]">
+                                {/* CONTENIDO CONCEPTO O FINAL */}
+                                {(currentModule.type === 'concept' || currentModule.type === 'final-msgbox') && (
+                                    <div>
+                                        <p className="text-lg text-gray-300 leading-relaxed mb-6">{currentModule.content}</p>
+                                        {currentModule.codeExample && <CodeBlock code={currentModule.codeExample} />}
+                                        <div className="mt-8 flex justify-end">
+                                            {currentModule.type !== 'final-msgbox' && (
+                                                <button onClick={() => { markModuleComplete(); handleNext(); }} className="bg-green-600 hover:bg-green-500 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center">
+                                                    Entendido, siguiente <i className="fas fa-arrow-right ml-2"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* VISUAL STEP (Pestaña Programador) */}
+                                {currentModule.type === 'visual-step' && (
+                                    <VisualSteps 
+                                        steps={currentModule.steps}
+                                        onComplete={() => { markModuleComplete(); handleNext(); }}
+                                    />
+                                )}
+
+                                {/* DRAG & DROP */}
+                                {currentModule.type === 'drag-drop' && (
+                                    <DragDropExercise 
+                                        data={currentModule} 
+                                        onComplete={() => { markModuleComplete(); }}
+                                    />
+                                )}
+
+                                {/* FILL BLANKS (5 Tipos de datos) */}
+                                {currentModule.type === 'fill-blanks' && (
+                                    <FillBlanksExercise 
+                                        data={currentModule}
+                                        onComplete={() => { markModuleComplete(); }}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Botón Flotante de Continuar (Si ya está resuelto) */}
+                            {(currentModule.type !== 'concept' && currentModule.type !== 'final-msgbox' && completed.includes(currentIndex) && currentIndex < courseData.length -1) && (
+                                <div className="mt-8 flex justify-end border-t border-gray-700 pt-4 animate-bounce-short">
+                                    <button onClick={handleNext} className="text-green-400 hover:text-green-300 font-semibold flex items-center">
+                                        Continuar al siguiente tema <i className="fas fa-chevron-right ml-2"></i>
+                                    </button>
+                                </div>
+                            )}
+
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
